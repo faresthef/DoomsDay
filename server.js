@@ -33,13 +33,21 @@ function parseDateInput(input) {
     let day = parseInt(slashMatch[1], 10);
     let month = parseInt(slashMatch[2], 10);
     let year = parseInt(slashMatch[3], 10);
-    if (year < 100) {
-      year += year > 30 ? 1900 : 2000;
-    }
+    if (year < 100) year += year > 30 ? 1900 : 2000;
     return new Date(year, month - 1, day);
   }
 
-  // Format jour mois année
+  // Format xx-xx-xx ou xx-xx-xxxx
+  const dashMatch = input.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+  if (dashMatch) {
+    let day = parseInt(dashMatch[1], 10);
+    let month = parseInt(dashMatch[2], 10);
+    let year = parseInt(dashMatch[3], 10);
+    if (year < 100) year += year > 30 ? 1900 : 2000;
+    return new Date(year, month - 1, day);
+  }
+
+  // Format jour mois année (13 décembre 1986)
   const dayMonthYearMatch = input.match(/^(\d{1,2})\s+([a-zéû]+)\s+(\d{4})$/);
   if (dayMonthYearMatch) {
     const day = parseInt(dayMonthYearMatch[1], 10);
@@ -50,7 +58,7 @@ function parseDateInput(input) {
     return new Date(year, month - 1, day);
   }
 
-  // Format mois jour année
+  // Format mois jour année (décembre 13 1986)
   const monthDayYearMatch = input.match(/^([a-zéû]+)\s+(\d{1,2})\s+(\d{4})$/);
   if (monthDayYearMatch) {
     const monthName = monthDayYearMatch[1];
@@ -80,22 +88,19 @@ function daysBetween(d1, d2) {
 function mentalism(dateStr, simpleFormat = false) {
   const birthDate = parseDateInput(dateStr);
   if (!birthDate) {
-    if (simpleFormat) return "invalid";
-    return "Date invalide. Formats acceptés: xx/xx/xx, xx/xx/xxxx, jour mois année, mois jour année.";
+    return simpleFormat ? "invalid" : "Date invalide. Formats acceptés: xx/xx/xx, xx/xx/xxxx, xx-xx-xx, xx-xx-xxxx, jour mois année, mois jour année.";
   }
 
   const dayName = getDayName(birthDate);
   const today = new Date();
   const daysElapsed = daysBetween(birthDate, today);
 
-  if (simpleFormat) {
-    return `${dayName},${daysElapsed}`;
-  } else {
-    return `Vous êtes né un ${dayName}.\nNombre de jours écoulés depuis votre naissance : ${daysElapsed}`;
-  }
+  return simpleFormat
+    ? `${dayName},${daysElapsed}`
+    : `Vous êtes né un ${dayName}.\nNombre de jours écoulés depuis votre naissance : ${daysElapsed}`;
 }
 
-// Endpoint webpolling avec réponse détaillée
+// Endpoint avec paramètre libre
 app.get('/birthdate/:date', (req, res) => {
   const dateStr = decodeURIComponent(req.params.date);
   const result = mentalism(dateStr);
@@ -103,9 +108,9 @@ app.get('/birthdate/:date', (req, res) => {
   res.send(result);
 });
 
-// Endpoint final avec format simple pour la date fixe 13 decembre 1986
+// Endpoint fixe /final : renvoie uniquement "jour,jours"
 app.get('/birthdate/final', (req, res) => {
-  const result = mentalism("13 decembre 1986", true);
+  const result = mentalism("13 décembre 1986", true);
   res.setHeader('Content-Type', 'text/plain');
   res.send(result);
 });
