@@ -2,69 +2,67 @@ const express = require('express');
 const cors = require('cors');
 const dayjs = require('dayjs');
 const customParseFormat = require('dayjs/plugin/customParseFormat');
+const localeFr = require('dayjs/locale/fr');
+
 dayjs.extend(customParseFormat);
+dayjs.locale(localeFr);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(express.json());
 
-// Fonction pour calculer le jour et les jours écoulés
-function mentalism(dateStr, simpleOutput = false) {
+let latestResult = null;
+
+// Fonction principale
+function analyzeBirthdate(inputDateStr) {
   const formats = [
-    'DD/MM/YYYY',
-    'D/M/YYYY',
-    'DD/MM/YY',
-    'D/M/YY',
-    'DD-MM-YYYY',
-    'D-M-YYYY',
-    'DD-MM-YY',
-    'D-M-YY',
-    'DD MMMM YYYY',
-    'MMMM DD YYYY',
-    'D MMMM YYYY',
-    'MMMM D YYYY'
+    'DD/MM/YY', 'DD/MM/YYYY',
+    'DD-MM-YY', 'DD-MM-YYYY',
+    'D MMMM YYYY', 'MMMM D YYYY'
   ];
 
-  let birthDate = null;
   for (const format of formats) {
-    const parsed = dayjs(dateStr, format, true);
-    if (parsed.isValid()) {
-      birthDate = parsed;
-      break;
+    const date = dayjs(inputDateStr, format, true);
+    if (date.isValid()) {
+      const jour = date.format('dddd'); // jour en français
+      const joursÉcoulés = dayjs().diff(date, 'day');
+
+      return [
+        `Vous êtes né un ${jour}.`,
+        `Il y a exactement ${joursÉcoulés} jours.`
+      ].join('\n');
     }
   }
 
-  if (!birthDate) {
-    return "Date invalide. Formats acceptés: xx/xx/xx, xx/xx/xxxx, xx-xx-xx, xx-xx-xxxx, jour mois année, mois jour année.";
-  }
-
-  const today = dayjs();
-  const daysElapsed = today.diff(birthDate, 'day');
-  const weekday = birthDate.format('dddd'); // nom du jour
-
-  return simpleOutput
-    ? `${weekday.toLowerCase()},${daysElapsed}`
-    : `Vous êtes né un ${weekday}.\nNombre de jours écoulés depuis votre naissance : ${daysElapsed}`;
+  return null;
 }
 
-// ➤ Endpoint dynamique avec date
+// Endpoint de soumission : /birthdate/:date
 app.get('/birthdate/:date', (req, res) => {
   const input = decodeURIComponent(req.params.date);
-  const result = mentalism(input);
-  res.setHeader('Content-Type', 'text/plain');
-  res.send(result);
+  const result = analyzeBirthdate(input);
+
+  if (result) {
+    latestResult = result;
+    return res.status(204).send(); // Pas de contenu, on stocke juste
+  } else {
+    return res.status(400).send("Date invalide. Formats acceptés: xx/xx/xx, xx/xx/yyyy, xx-xx-xx, xx-xx-yyyy, jour mois année.");
+  }
 });
 
-// ➤ Web Polling + fallback + ?date= optionnel
-app.get(['/birthdate/final', '/birthdate/final/'], (req, res) => {
-  const date = req.query.date || "13 décembre 1986"; // valeur par défaut
-  const result = mentalism(date, true);
-  res.setHeader('Content-Type', 'text/plain');
-  res.send(result);
+// Endpoint d'affichage final
+app.get('/final', (req, res) => {
+  if (latestResult) {
+    res.type('text/plain');
+    return res.send(latestResult);
+  } else {
+    return res.send("");
+  }
 });
 
-// ➤ Lancer serveur
+// Lancement du serveur
 app.listen(PORT, () => {
-  console.log(`✅ Serveur lancé sur http://localhost:${PORT}`);
+  console.log(`✅ Serveur actif sur http://localhost:${PORT}`);
 });
