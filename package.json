@@ -1,0 +1,23 @@
+{
+  "name": "anniversaire-mentalisme",
+  "version": "1.0.0",
+  "description": "Application mentale basée sur la date d'anniversaire",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "mentalisme",
+    "date",
+    "luxon",
+    "express",
+    "anniversaire"
+  ],
+  "author": "Fares Mentaliste",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "luxon": "^3.4.4"
+  }
+}
