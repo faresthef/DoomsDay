@@ -25,10 +25,22 @@ function analyzeBirthdate(input) {
   for (const format of formats) {
     const date = dayjs(input, format, true);
     if (date.isValid()) {
+      const dayOfWeek = date.day(); // 0 = dimanche
+      let symbol = '';
+
+      switch (dayOfWeek) {
+        case 1: symbol = '.'; break;       // lundi
+        case 2: symbol = '..'; break;      // mardi
+        case 3: symbol = '...'; break;     // mercredi
+        case 4: symbol = ','; break;       // jeudi
+        case 5: symbol = ',,'; break;      // vendredi
+        case 6: symbol = ',,,'; break;     // samedi
+        case 0: symbol = ''; break;        // dimanche
+      }
+
       return {
-        jourComplet: date.format('dddd'),     // ex : lundi
-        jourAbrégé: date.format('dd').toLowerCase(), // ex : lu
-        joursÉcoulés: dayjs().diff(date, 'day')
+        joursÉcoulés: dayjs().diff(date, 'day'),
+        codeJour: symbol
       };
     }
   }
@@ -41,7 +53,7 @@ app.get('/birthdate/:date', (req, res) => {
 
   if (result) {
     latestResult = result;
-    return res.status(204).send();
+    return res.status(204).send(); // No content, result is stored
   } else {
     latestResult = null;
     return res.status(400).send("Date invalide. Formats acceptés: xx/xx/xx, xx/xx/yyyy, xx-xx-xx, xx-xx-yyyy, jour mois année.");
@@ -51,7 +63,7 @@ app.get('/birthdate/:date', (req, res) => {
 app.get('/final', (req, res) => {
   if (latestResult) {
     res.type('text/plain');
-    return res.send(`${latestResult.joursÉcoulés}\n${latestResult.jourAbrégé}`);
+    return res.send(`${latestResult.joursÉcoulés}\n${latestResult.codeJour}`);
   } else {
     return res.send("");
   }
