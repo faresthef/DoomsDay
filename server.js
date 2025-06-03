@@ -15,7 +15,7 @@ app.use(express.json());
 
 let latestResult = null;
 
-// Fonction principale
+// Fonction d'analyse
 function analyzeBirthdate(inputDateStr) {
   const formats = [
     'DD/MM/YY', 'DD/MM/YYYY',
@@ -26,37 +26,33 @@ function analyzeBirthdate(inputDateStr) {
   for (const format of formats) {
     const date = dayjs(inputDateStr, format, true);
     if (date.isValid()) {
-      const jour = date.format('dddd'); // jour en français
-      const joursÉcoulés = dayjs().diff(date, 'day');
-
-      return [
-        `Vous êtes né un ${jour}.`,
-        `Il y a exactement ${joursÉcoulés} jours.`
-      ].join('\n');
+      const jour = date.format('dddd'); // exemple : samedi
+      const joursÉcoulés = dayjs().diff(date, 'day'); // nombre entier
+      return { jour, joursÉcoulés };
     }
   }
 
   return null;
 }
 
-// Endpoint de soumission : /birthdate/:date
+// Endpoint de réception de date
 app.get('/birthdate/:date', (req, res) => {
   const input = decodeURIComponent(req.params.date);
   const result = analyzeBirthdate(input);
 
   if (result) {
     latestResult = result;
-    return res.status(204).send(); // Pas de contenu, on stocke juste
+    return res.status(204).send(); // No content, on stocke juste
   } else {
     return res.status(400).send("Date invalide. Formats acceptés: xx/xx/xx, xx/xx/yyyy, xx-xx-xx, xx-xx-yyyy, jour mois année.");
   }
 });
 
-// Endpoint d'affichage final
+// Endpoint pour récupérer le résultat
 app.get('/final', (req, res) => {
   if (latestResult) {
     res.type('text/plain');
-    return res.send(latestResult);
+    return res.send(`${latestResult.jour}\n${latestResult.joursÉcoulés}`);
   } else {
     return res.send("");
   }
